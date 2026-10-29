@@ -7,8 +7,8 @@ $('video').addEventListener('resize',paintGuide);
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&stream){stream.getTracks().forEach(t=>t.stop());stream=null;$('video').srcObject=null;$('cameraStatus').textContent='已暂停相机，返回后点击开启相机';}});
 const oldRecordResult=recordResult;
 recordResult=function(){let before=history.length;oldRecordResult();if(history.length>before)saveHistory();};saveRecord.onclick=recordResult;
-function saveHistory(){try{localStorage.setItem('plate-history-v1',JSON.stringify({sequence,history}));$('history').textContent+=' · 已保存到本机';}catch(e){$('history').textContent+=' · 本机保存失败，请立即导出';}}
-try{let saved=JSON.parse(localStorage.getItem('plate-history-v1')||'null');if(saved&&Array.isArray(saved.history)){history=saved.history;sequence=Number(saved.sequence)||0;$('history').textContent='已恢复本机记录 '+history.length+' 组，请及时导出备份。';}}catch(e){}
+function saveHistory(){try{localStorage.setItem('plate-history-v1-'+(new URLSearchParams(location.search).get('module')||'mycoplasma'),JSON.stringify({sequence,history}));$('history').textContent+=' · 已保存到本机';}catch(e){$('history').textContent+=' · 本机保存失败，请立即导出';}}
+try{let saved=JSON.parse(localStorage.getItem('plate-history-v1-'+(new URLSearchParams(location.search).get('module')||'mycoplasma'))||'null');if(saved&&Array.isArray(saved.history)){history=saved.history;sequence=Number(saved.sequence)||0;$('history').textContent='已恢复本机记录 '+history.length+' 组，请及时导出备份。';}}catch(e){}
 const oldClear=$('historyClear').onclick;$('historyClear').onclick=()=>{oldClear();saveHistory();};
 const oldDownload=download;
 download=function(name,text,type){let file=new File([text],name,{type});if(navigator.canShare&&navigator.canShare({files:[file]})&&/iPhone|iPad/.test(navigator.userAgent)){navigator.share({files:[file],title:name}).catch(e=>{if(e.name!=='AbortError')oldDownload(name,text,type);});}else oldDownload(name,text,type);};
