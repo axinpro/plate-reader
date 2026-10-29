@@ -1,4 +1,4 @@
-const CACHE='plate-iphone-v6';
+const CACHE='plate-iphone-v7';
 const FILES=['./index.html','./workflow.js','./mobile.js','./modules.js','./positioning.js','./auto-detect.js','./live-detect.js','./reference-template.js','./template-camera.js','./mobile.css','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES))));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('plate-iphone-')&&k!==CACHE).map(k=>caches.delete(k))))));

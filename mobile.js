@@ -1,6 +1,6 @@
-const help=document.createElement('div');help.id='installHelp';help.textContent='iPhone：在 Safari 打开 HTTPS 地址，点分享 → 添加到主屏幕。首次联网加载后可离线打开。请固定手机与灯光，改变方向后检查机位。';document.querySelector('h1').after(help);
+const help=document.createElement('div');help.id='installHelp';help.textContent='iPhone安装：Safari → 分享 → 添加到主屏幕。';document.querySelector('h1').after(help);
 let nav=document.createElement('nav');nav.className='mobile-nav';[['拍摄','camera'],['校准','batchName'],['结果','heat'],['记录','history']].forEach(([label,id])=>{let b=document.createElement('button');b.textContent=label;b.onclick=()=>$(id).closest('.card').scrollIntoView({behavior:'smooth',block:'start'});nav.append(b);});help.after(nav);
-if(!window.isSecureContext)help.textContent='当前不是安全网页地址：iPhone 实时相机和离线安装需通过 HTTPS 打开。仍可选择照片进行分析。';
+if(!window.isSecureContext)help.textContent='相机需HTTPS地址；当前可上传照片。';
 if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js').catch(()=>{help.textContent+=' 离线缓存未启用，请保持联网。';});
 // Keep the camera overlay synchronized with the actual video dimensions.
 $('video').addEventListener('resize',paintGuide);
