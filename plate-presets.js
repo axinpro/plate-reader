@@ -2,7 +2,25 @@ const dilution12=['100','50','25','12.5','6.25','3.125','1.5625','0.78','0.39','
 const dilution10=['25','12.5','6.25','3.125','1.5625','0.78','0.39','0.195','0.0976','0.0488'];
 const combination12=['66/33','33/16.5','16.5/8.25','8.25/4.125','4.125/2.06','2.06/1.03','1.03/0.5156','0.5156/0.2578','0.2578/0.1289','0.1289/0.0644','0.0644/0.0322','0.0322/0.0161'];
 function buildPlatePreset(type,names=[]){let drugs=type==='1'?['替米考星','林可霉素','安普霉素','庆大霉素','大观霉素','恩诺沙星','多西环素','泰万菌素']:type==='2'?['新霉素','泰拉菌素','加米霉素','氟苯尼考','沙拉沙星','土霉素','金霉素','泰妙菌素']:['林可霉素+大观霉素','泰乐菌素','林可霉素+大观霉素','泰乐菌素','林可霉素+大观霉素','泰乐菌素'];let rows=[],controls=[];for(let r=0;r<8;r++){let sample=type==='3'?Math.floor(r/2):0,series='菌株'+(sample+1)+(names[sample]?' · '+names[sample]:''),letter='ABCDEFGH'[r],short=type==='3'?r%2===1:r===7,conc=short?dilution10:type==='3'?combination12:dilution12;conc.forEach((v,c)=>rows.push({well:letter+(c+1),drug:drugs[r],concentration:v,rank:+v.split('/')[0],unit:'µg/mL',series,sample,plateType:type}));if(short)controls.push({sample,series,negative:letter+'12',positive:letter+'11'});}return {rows,controls,type};}
-function presetMIC(rows,observations,control,ready){let pending=reason=>'待复核：'+reason;if(!ready)return pending('请完成参照及MIC终点确认');const neg=observations.find(d=>d.well===control.negative),pos=observations.find(d=>d.well===control.positive);if(!neg||!pos||neg.final!=='未达阈值'||pos.final!=='生长信号')return pending('阴阳性对照异常');let sorted=rows.slice().sort((a,b)=>a.rank-b.rank),states=sorted.map(r=>observations.find(d=>d.well===r.well)?.final);if(states.some(s=>!['生长信号','未达阈值'].includes(s)))return pending('有不确定孔');let first=states.indexOf('未达阈值');if(states.some((s,i)=>s!==(first<0||i<first?'生长信号':'未达阈值')))return pending('浓度序列不连续');return (first<0?'> '+sorted.at(-1).concentration:first===0?'≤ '+sorted[0].concentration:sorted[first].concentration)+' µg/mL';}
+function presetMIC(rows,observations,control,ready){
+  const pending=reason=>'待复核：'+reason;
+  if(!ready)return pending('请完成参照及MIC终点确认');
+  const neg=observations.find(d=>d.well===control.negative),pos=observations.find(d=>d.well===control.positive);
+  if(!neg||!pos||neg.final!=='未达阈值'||pos.final!=='生长信号')return pending('阴阳性对照异常');
+  const sorted=rows.slice().sort((a,b)=>b.rank-a.rank),states=sorted.map(r=>observations.find(d=>d.well===r.well)?.final);
+  if(!states.length||states.some(s=>!['生长信号','未达阈值','待复核'].includes(s)))return pending('孔数据不完整');
+  const first=states.indexOf('生长信号');
+  if(first<0)return states.includes('待复核')?pending('尚无明确生长边界'): '≤ '+sorted.at(-1).concentration+' µg/mL';
+  if(states.slice(first+1).includes('未达阈值'))return pending('浓度序列不连续');
+  if(first===0)return states.includes('待复核')?pending('有不确定孔'): '> '+sorted[0].concentration+' µg/mL';
+  let candidate=first-1;
+  while(candidate>=0&&states[candidate]==='待复核')candidate--;
+  if(candidate<0)return pending('生长孔前无明确未达阈值孔');
+  // Only the contiguous review wells immediately before growth may be bypassed.
+  if(states.slice(0,candidate).includes('待复核')||states.slice(first+1).includes('待复核'))return pending('其他浓度有不确定孔');
+  const value=sorted[candidate].concentration+' µg/mL';
+  return candidate===first-1?value:'暂定 MIC：'+value+'（需复核：'+sorted.slice(candidate+1,first).map(r=>r.well).join('、')+'）';
+}
 const presetPanel=document.createElement('div');presetPanel.innerHTML='<label>药敏板 <select id="plateType"><option value="">自定义布局</option><option value="1">第一种 · 8药/单菌</option><option value="2">第二种 · 8药/单菌</option><option value="3">第三种 · 2药/四菌</option></select></label><div id="strainInputs"></div><button id="applyPlate">保存板型到批次</button><p id="plateDescription"></p><details><summary>查看浓度表（µg/mL）</summary><div id="plateTable" style="overflow:auto"></div></details>';$('flowStatus').before(presetPanel);
 let activePreset=null;
 function strainFields(names=[]){$('strainInputs').innerHTML='';let n=$('plateType').value==='3'?4:1;for(let i=0;i<n;i++){let input=document.createElement('input');input.id='strain'+i;input.placeholder='菌株'+(i+1)+'名称';input.value=names[i]||'';$('strainInputs').append(input);}}
